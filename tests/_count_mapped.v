@@ -1,0 +1,27 @@
+module count(clk, rst, en, load, d, q);
+  input clk; input rst; input en; input load;
+  input [3:0] d; output [3:0] q;
+  sky130_fd_sc_hd__dfxtp_1 _10_ ();
+  sky130_fd_sc_hd__dfxtp_1 _11_ ();
+  sky130_fd_sc_hd__dfxtp_1 _12_ ();
+  sky130_fd_sc_hd__dfxtp_1 _13_ ();
+  sky130_fd_sc_hd__mux2_1 _14_ ();
+  sky130_fd_sc_hd__mux2_1 _15_ ();
+  sky130_fd_sc_hd__mux2_1 _16_ ();
+  sky130_fd_sc_hd__xor2_1 _17_ ();
+  sky130_fd_sc_hd__xor2_1 _18_ ();
+  sky130_fd_sc_hd__xor2_1 _19_ ();
+  sky130_fd_sc_hd__and2_0 _20_ ();
+  sky130_fd_sc_hd__and3_1 _21_ ();
+  sky130_fd_sc_hd__nand2_1 _22_ ();
+  sky130_fd_sc_hd__a21oi_1 _23_ ();
+  sky130_fd_sc_hd__o21ai_0 _24_ ();
+  sky130_fd_sc_hd__inv_1 _25_ ();
+  sky130_fd_sc_hd__nor2_1 _26_ ();
+  sky130_fd_sc_hd__xnor2_1 _27_ ();
+  sky130_fd_sc_hd__mux2i_1 _28_ ();
+  sky130_fd_sc_hd__a22o_1 _29_ ();
+  sky130_fd_sc_hd__buf_1 _30_ ();
+  sky130_fd_sc_hd__nand3_1 _31_ ();
+  sky130_fd_sc_hd__o21a_1 _32_ ();
+endmodule

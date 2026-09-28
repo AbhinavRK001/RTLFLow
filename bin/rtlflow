@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# RTLFlow launcher — no nix-shell needed: tools are discovered by rtlflow/env.py
+# (PATH, /nix/store, ~/.local, oss-cad-suite ...). Override any tool with
+# RTLFLOW_<TOOL>=/path, e.g. RTLFLOW_OPENROAD=/nix/store/…/bin/openroad
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+BIN_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+RTLFLOW_HOME="$(dirname "$BIN_DIR")"
+export RTLFLOW_HOME
+export PYTHONPATH="$RTLFLOW_HOME${PYTHONPATH:+:$PYTHONPATH}"
+PY="${RTLFLOW_PYTHON:-}"
+if [ -z "$PY" ]; then
+  # prefer the system python (it has python3-tk on Ubuntu) over any nix python on PATH
+  for c in /usr/bin/python3 python3; do
+    if command -v "$c" >/dev/null 2>&1; then PY="$(command -v "$c")"; break; fi
+  done
+fi
+TOOL="$(basename "$0")"
+if [ "$TOOL" = "rtlflow" ]; then
+  exec "$PY" -m rtlflow "$@"
+else
+  exec "$PY" -m rtlflow "$TOOL" "$@"
+fi
