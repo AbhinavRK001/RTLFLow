@@ -163,7 +163,7 @@ class GenusShell(Shell):
         except OSError:
             pass
         if not r.ok:
-            errs = [l for l in r.lines if l.startswith("ERROR") or "error" in l.lower()[:20]]
+            errs = list(dict.fromkeys(l for l in r.lines if l.startswith("ERROR") or "error" in l.lower()[:20]))
             for l in errs[-5:]:
                 console.write(colorize_backend_line(l))
             info(f"  full log: {self.project.rel(log)}")
@@ -336,6 +336,13 @@ class GenusShell(Shell):
         top = args[0] if args else (self.st.top or self._guess_top())
         if not top:
             raise CmdError("Cannot determine top module — elaborate <top>")
+        mods = []
+        for f in self.st.hdl:
+            t = re.sub(r"//[^\n]*|/\*.*?\*/", "", _safe_read(f), flags=re.S)
+            mods += re.findall(r"^\s*module\s+(\w+)", t, re.M)
+        if mods and top not in mods:
+            raise CmdError(f"Module '{top}' is not in the HDL read so far. Modules: {', '.join(sorted(set(mods)))}"
+                           + (f"  → elaborate {self._guess_top()}" if self._guess_top() else ""), "RFG-ELAB-003")
         self.st.top = top
         note(f"Info    : Elaborating Design. [ELAB-1]\n        : Elaborating top-level block '{top}'.")
         script = (self._read_script() + f"hierarchy -check -top {top}\nproc\nopt_clean\ncheck\n"
@@ -522,7 +529,7 @@ class GenusShell(Shell):
         if strategy == "delay":
             d = period or 10000
             abc = (f"abc {self._liberty_args()} -D {d} {du} "
-                   f"-script \"+strash;ifraig;scorr;dc2;dretime;strash;&get,-n;&dch,-f;&nf,{{D}};&put;buffer;upsize,{{D}};dnsize,{{D}};stime,-p\"")
+                   f"-script +strash;ifraig;scorr;dc2;dretime;strash;&get,-n;&dch,-f;&nf,{{D}};&put;buffer;upsize,{{D}};dnsize,{{D}};stime,-p")
         else:
             dflag = f"-D {period}" if period else ""
             abc = f"abc {self._liberty_args()} {dflag} {du}"
@@ -912,6 +919,10 @@ class GenusShell(Shell):
                         self._gui_design()
                 elif t == "cmd":
                     line = msg.get("line", "")
+                    if line.strip().split()[:1] in (["exit"], ["quit"]):
+                        console.write(f"{C.GRY}genus: 'exit' in the GUI closes the GUI only{C.RESET}")
+                        self.gui_send(t="quit")
+                        continue
                     console.write(f"{C.MAG}[GUI]{C.RESET} {C.BOLD}{line}{C.RESET}")
                     if msg.get("report"):
                         console.begin_capture()
@@ -951,8 +962,10 @@ class GenusShell(Shell):
 
 # ════════════════════════════════ helpers ════════════════════════════════
 def _yq(x) -> str:
-    """Quote a path for a Yosys script (Yosys is not Tcl — use double quotes, not braces)."""
-    return '"' + str(x).replace('"', '\\"') + '"'
+    """Path for a Yosys script. Yosys passes (tee, abc, dfflibmap …) do NOT strip quotes — only
+    frontends do — so paths are written bare; quote only if they contain whitespace."""
+    s = str(x)
+    return '"' + s + '"' if any(ch.isspace() for ch in s) else s
 
 
 def _safe_read(p) -> str:

@@ -19,6 +19,7 @@ import sys
 import threading
 import time
 import traceback
+import types
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -265,7 +266,9 @@ class Shell:
             for attr, val in vars(klass).items():
                 c = getattr(val, "_rf_cmd", None)
                 if c:
-                    bound = getattr(self, attr)
+                    # bind the decorated function itself: a subclass method that happens to share
+                    # the Python name must not hijack another command (e.g. `clear`)
+                    bound = types.MethodType(val, self)
                     cmd = Command(c.name, bound, c.category, c.usage, c.help, c.aliases, c.hidden)
                     self.commands[c.name] = cmd
                     for a in c.aliases:

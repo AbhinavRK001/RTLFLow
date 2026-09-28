@@ -222,7 +222,8 @@ class GenusGUI:
                 else:
                     m.add_command(label=it[0], command=it[1])
             bar.add_cascade(label=label, menu=m)
-        mk("File", [("Write HDL…", lambda: self.send("write_hdl", report=True)),
+        mk("File", [("Read Libraries…", self.dlg_libs), ("Read HDL…", self.dlg_hdl), ("Elaborate…", self.dlg_elab), None,
+                    ("Write HDL…", lambda: self.send("write_hdl", report=True)),
                     ("Write SDC…", lambda: self.send("write_sdc", report=True)),
                     ("Write Design for Innovus", lambda: self.send("write_design -innovus", report=True)), None,
                     ("Close GUI", self.root.destroy)])
@@ -248,6 +249,9 @@ class GenusGUI:
             b.pack(side="left", padx=1)
             _Tip(b, tip)
         ttk.Separator(tb, orient="vertical").pack(side="left", fill="y", padx=8)
+        for text, cmd in (("Read Libs", self.dlg_libs), ("Read HDL", self.dlg_hdl), ("Clock", self.dlg_clock)):
+            ttk.Button(tb, text=text, style="Tool.TButton", command=cmd).pack(side="left", padx=1)
+        ttk.Separator(tb, orient="vertical").pack(side="left", fill="y", padx=8)
         ttk.Label(tb, text="Find").pack(side="left")
         self.find = ttk.Entry(tb, width=22)
         self.find.pack(side="left", padx=6)
@@ -258,7 +262,8 @@ class GenusGUI:
         cmds = {"read": None, "elaborated": "elaborate", "generic": "syn_generic", "mapped": "syn_map", "optimized": "syn_opt"}
         for key, label in G_STAGES:
             b = ttk.Button(fr, text=label, style="Flow.TButton",
-                           command=lambda c=cmds[key]: self.send(c) if c else None)
+                           command=(self.dlg_hdl if key == "read" else (self.dlg_elab if key == "elaborated" else
+                                    (lambda c=cmds[key]: self.send(c)))))
             b.pack(side="left", padx=1)
             self.flow[key] = b
 
@@ -460,6 +465,27 @@ class GenusGUI:
         self.hi = hits
         self.hi_label = f"find '{pat}': {len(hits)}"
         self.redraw()
+
+    def dlg_libs(self):
+        from tkinter import filedialog
+        fns = filedialog.askopenfilenames(parent=self.root, title="Read timing libraries",
+                                          initialdir=os.path.expanduser("~/.volare/sky130A/libs.ref"),
+                                          filetypes=[("Liberty", "*.lib *.lib.gz"), ("All", "*")])
+        if fns:
+            self.send("read_libs " + " ".join("{" + f + "}" for f in fns))
+        else:
+            self.send("read_libs")          # PDK default
+
+    def dlg_hdl(self):
+        from tkinter import filedialog
+        fns = filedialog.askopenfilenames(parent=self.root, title="Read HDL", initialdir=self.project,
+                                          filetypes=[("SystemVerilog / Verilog", "*.sv *.v"), ("All", "*")])
+        if fns:
+            self.send("read_hdl -sv {" + " ".join(fns) + "}")
+
+    def dlg_elab(self):
+        Dialog(self.root, self.fonts, "Elaborate", [("top", "Top module (blank = auto)", "str", None, self.top or "")],
+               lambda v: self.send("elaborate" + (f" {v['top']}" if v["top"] else "")))
 
     def dlg_clock(self):
         Dialog(self.root, self.fonts, "Create Clock", [("name", "Name", "str", None, "clk"),

@@ -151,7 +151,10 @@ class NCLaunchShell(GuiMixin, Shell):
 
     @command("read_tb", cat="Compile", usage="read_tb {files}", help="Add testbench sources")
     def c_read_tb(self, args):
-        files = [str(Path(f).resolve()) for f in expand_files(args)]
+        _, pos = parse_opts(args, flags={"-sv", "-v2001", "-linedebug", "-messages", "-nocopyright"})
+        files = [str(Path(f).resolve()) for f in expand_files(pos)]
+        if not files:
+            raise CmdError("usage: read_tb [-sv] {files}")
         for f in files:
             if not Path(f).exists():
                 raise CmdError(f"File not found: {f}")
@@ -159,8 +162,10 @@ class NCLaunchShell(GuiMixin, Shell):
                 self.st.rtl.remove(f)
             if f not in self.st.tb:
                 self.st.tb.append(f)
-        if not self.st.top:
-            self.st.top = _first_module(files[0]) if files else ""
+        new_top = _first_module(files[-1])
+        if new_top and new_top != self.st.top:
+            self.st.top = new_top          # the testbench you just read becomes the simulation top
+            self.st.built = ""
         ok(f"  Testbench: {', '.join(Path(f).name for f in self.st.tb)}  (sim top: {self.st.top or '?'})")
         return True
 
@@ -205,6 +210,13 @@ class NCLaunchShell(GuiMixin, Shell):
         srcs = self.st.rtl + self.st.tb
         if not srcs:
             raise CmdError("No sources — read_hdl / read_tb first")
+        mods = sorted({m for f in srcs for m in _modules(f)})
+        if self.st.top not in mods:
+            tbs = [m for f in self.st.tb for m in _modules(f)]
+            bad = self.st.top
+            self.st.top = tbs[-1] if tbs else ""
+            raise CmdError(f"Module '{bad}' is not in the loaded sources. Modules: {', '.join(mods) or '-'}"
+                           + (f"  → try: elaborate {tbs[-1]}" if tbs else ""), "RFN-ELAB-002")
         build = self.project.sim / self.st.engine
         build.mkdir(parents=True, exist_ok=True)
         wave = self.project.sim / f"{self.st.top}.vcd"
@@ -316,7 +328,7 @@ class NCLaunchShell(GuiMixin, Shell):
         return True
 
     @command("clear_sources", cat="Session", help="Forget all sources")
-    def c_clear(self, args):
+    def c_clear_sources(self, args):
         self.st = SimState(engine=self.st.engine)
         ok("Sources cleared")
         return True
@@ -333,6 +345,11 @@ def _read(f) -> str:
         return Path(f).read_text(errors="replace")
     except OSError:
         return ""
+
+
+def _modules(f: str) -> list[str]:
+    t = re.sub(r"//[^\n]*|/\*.*?\*/", "", _read(f), flags=re.S)
+    return re.findall(r"^\s*module\s+(\w+)", t, re.M)
 
 
 def _first_module(f: str) -> str:

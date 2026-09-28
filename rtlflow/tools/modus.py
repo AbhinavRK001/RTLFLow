@@ -133,8 +133,8 @@ class ModusShell(GuiMixin, Shell):
             if not top:
                 raise CmdError("read_netlist <file.v> -top <name>")
             js = self.ddir / f"{top}.model.json"
-            script = (f'read_liberty -lib "{self.st.lib}"\nread_verilog "{f}"\nhierarchy -top {top}\n'
-                      f'write_json "{js}"\n')
+            script = (f"read_liberty -lib {self.st.lib}\nread_verilog -sv {f}\nhierarchy -top {top}\n"
+                      f"write_json {js}\n")
             r = runner.yosys(script, self.ddir / "to_json.ys", self.ddir / "to_json.log")
             if not r.ok or not js.exists():
                 raise CmdError("Yosys could not convert the netlist to JSON (see .rtlflow/runs/dft/to_json.log)")

@@ -259,6 +259,11 @@ class InnovusShell(Shell):
                     line = msg.get("line", "").strip()
                     if not line:
                         continue
+                    if line.split()[0] in ("exit", "quit", "exit_tool"):
+                        console.write(f"{C.GRY}{self.tool}: 'exit' typed in the GUI closes the GUI only — "
+                                      f"type exit in this terminal to end the session{C.RESET}")
+                        self.gui_send(t="quit")
+                        continue
                     console.write(f"{C.MAG}[GUI]{C.RESET} {C.BOLD}{line}{C.RESET}")
                     if msg.get("report"):
                         console.begin_capture()

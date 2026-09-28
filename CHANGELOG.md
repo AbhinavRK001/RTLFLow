@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.7.1 — 2026-09-28 (fixes from the first real run on exp_2)
+- **genus elaborate failed** with `Can't create file …elab.stat.txt`: Yosys passes (tee, abc, dfflibmap)
+  don't strip quotes the way frontends do, so quoted paths broke `tee -o`, `-liberty` and `abc -script`.
+  Paths are now written bare (quoted only if they contain spaces).
+- **`clear` in nclaunch wiped your sources**: a method-name clash bound `clear` to `clear_sources`.
+  Commands are now bound to the function that declares them; `clear` clears the screen again.
+- `exit` / `quit` typed in a GUI's command line now closes that GUI only (was silently ignored).
+- `read_tb -sv file` accepted; the testbench you read last becomes the simulation top.
+- `elaborate <top>` (nclaunch and genus) checks the module exists and lists the available ones.
+- Genus GUI: File → Read Libraries / Read HDL / Elaborate dialogs, toolbar buttons; the flow chips
+  "Read HDL" and "Elaborate" open those dialogs.
+- Yosys error lines are no longer printed twice.
+
 ## 2.7.0 "Signoff" — 2026-09-28
 
 Every tool now has a shell **and** a GUI on the same session, plus a launcher to pick them.
