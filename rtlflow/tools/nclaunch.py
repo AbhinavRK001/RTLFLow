@@ -306,7 +306,16 @@ class NCLaunchShell(GuiMixin, Shell):
     @command("simvision", cat="Waves", aliases=["waves", "gtkwave"], usage="simvision [file.vcd]",
              help="Open the waveform viewer (GTKWave / Surfer)")
     def c_simvision(self, args):
-        return simvision(args or ([self.st.wave] if self.st.wave else []))
+        files = args or ([self.st.wave] if self.st.wave else [])
+        if self.gui and self.gui.is_open:
+            wave = Path(files[0]) if files else (_find_wave(self.project.sim) or _find_wave(Path.cwd()))
+            if wave and Path(wave).exists():
+                self.st.wave = str(Path(wave).resolve())
+                self.gui_send(t="wave", file=self.st.wave)
+                if not (env.find_tool("gtkwave") or env.find_tool("surfer")):
+                    ok(f"Waveform opened in the NCLaunch viewer: {self.project.rel(wave)}")
+                    return True
+        return simvision(files)
 
     @command("status", cat="Session", help="Simulation setup")
     def c_status(self, args):

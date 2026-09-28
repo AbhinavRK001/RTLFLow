@@ -1,4 +1,4 @@
-# RTLFlow 2.7.0 "Signoff"
+# RTLFlow 2.7.2 "Signoff"
 
 A Cadence-style EDA suite — seven tools, each with a Tcl-style shell **and** its
 own GUI on the same session — running real open-source engines underneath.
@@ -99,6 +99,10 @@ pegasus -gui    : read_layout ; run_drc ; run_lvs
 ```
 
 Full user guide: `docs/RTLFlow_User_Guide.docx`.
+
+**HiDPI / scaled displays:** all GUIs size rows, paddings and drawings from the actual font
+metrics, so nothing is clipped at 125–200 % scaling. To force a size:
+`export RTLFLOW_GUI_SCALE=1.5`.
 
 ## Tests without EDA tools
 

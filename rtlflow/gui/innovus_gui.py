@@ -127,8 +127,7 @@ class InnovusGUI:
         self.hist_i = 0
 
         root.title(self._title())
-        root.geometry("1480x920")
-        root.minsize(980, 640)
+        T.fit_geometry(root, 1480, 920, 980, 640)
         self._build_menu()
         self._build_toolbar()
         self._build_body()
@@ -298,7 +297,7 @@ class InnovusGUI:
         self.cv.pack(fill="both", expand=True)
         self.hpane.add(cf, weight=5)
         # right panel
-        rp = ttk.Frame(self.hpane, style="Panel.TFrame", width=330)
+        rp = ttk.Frame(self.hpane, style="Panel.TFrame", width=T.px(330))
         self.hpane.add(rp, weight=0)
         self.nb = ttk.Notebook(rp)
         self.nb.pack(fill="both", expand=True)
@@ -309,7 +308,7 @@ class InnovusGUI:
         wv = ttk.Frame(rp, style="Panel.TFrame", padding=(8, 4, 8, 8))
         wv.pack(fill="x", side="bottom")
         ttk.Label(wv, text="WORLD VIEW", style="Dim.TLabel").pack(anchor="w")
-        self.wv = tk.Canvas(wv, height=150, bg="#0a0b0d", highlightthickness=1, highlightbackground=T.LINE)
+        self.wv = tk.Canvas(wv, height=T.px(150), bg="#0a0b0d", highlightthickness=1, highlightbackground=T.LINE)
         self.wv.pack(fill="x", pady=(3, 0))
         self.wv.bind("<Button-1>", self._wv_click)
         self.wv.bind("<B1-Motion>", self._wv_click)
@@ -329,7 +328,7 @@ class InnovusGUI:
         sb.pack(side="right", fill="y")
         self.tx.pack(side="left", fill="both", expand=True)
         cl = ttk.Frame(self.tframe, style="Panel.TFrame", padding=(8, 4))
-        cl.pack(fill="x")
+        cl.pack(fill="x", side="bottom", before=body)   # command line never gets clipped
         ttk.Label(cl, text="innovus>", style="Panel.TLabel", font=self.fonts["mono"], foreground="#7fb6ff").pack(side="left")
         self.cmd_entry = ttk.Entry(cl, font=self.fonts["mono"])
         self.cmd_entry.pack(side="left", fill="x", expand=True, padx=(6, 0))
@@ -360,7 +359,7 @@ class InnovusGUI:
     def _build_layers_tab(self) -> None:
         outer = ttk.Frame(self.nb, style="Panel.TFrame")
         self.nb.add(outer, text="Layers")
-        cv = tk.Canvas(outer, bg=T.BG2, highlightthickness=0, width=300)
+        cv = tk.Canvas(outer, bg=T.BG2, highlightthickness=0, width=T.px(300))
         sb = ttk.Scrollbar(outer, orient="vertical", command=cv.yview)
         self.layers_frame = ttk.Frame(cv, style="Panel.TFrame")
         self.layers_frame.bind("<Configure>", lambda e: cv.configure(scrollregion=cv.bbox("all")))
@@ -403,8 +402,8 @@ class InnovusGUI:
         var = self._v(key, default)
         row = ttk.Frame(parent, style="Panel.TFrame")
         row.pack(fill="x", padx=10, pady=1)
-        sw = tk.Canvas(row, width=14, height=14, bg=T.BG2, highlightthickness=0)
-        sw.create_rectangle(1, 1, 13, 13, fill=color, outline="#000")
+        sw = tk.Canvas(row, width=T.px(14), height=T.px(14), bg=T.BG2, highlightthickness=0)
+        sw.create_rectangle(1, 1, T.px(14) - 1, T.px(14) - 1, fill=color, outline="#000")
         sw.pack(side="left", padx=(0, 6))
         ttk.Checkbutton(row, text=text, variable=var, command=self.redraw).pack(side="left", anchor="w")
 
@@ -424,7 +423,7 @@ class InnovusGUI:
             v.pack(side="left", fill="x")
             self.design_labels[key] = v
         ttk.Separator(f).pack(fill="x", pady=8)
-        self.files_lbl = ttk.Label(f, text="", style="Dim.TLabel", justify="left", wraplength=290)
+        self.files_lbl = ttk.Label(f, text="", style="Dim.TLabel", justify="left", wraplength=T.px(290))
         self.files_lbl.pack(anchor="w")
 
     def _build_attr_tab(self) -> None:
@@ -993,11 +992,11 @@ class InnovusGUI:
                     label = comp.name
                     two = h * s > 30 and len(comp.master.split("__")[-1]) * (font_px - 2) * 0.62 < w * s - 4
                     c.create_text(X, Y - (font_px * 0.6 if two else 0), text=label,
-                                  fill="#c8d1dc", font=(self.fonts["mono"][0], font_px))
+                                  fill="#c8d1dc", font=(self.fonts["mono"][0], -font_px))
                     short = comp.master.split("__")[-1]
                     if h * s > 30 and len(short) * (font_px - 2) * 0.62 < w * s - 4:
                         c.create_text(X, Y + font_px * 0.7, text=short, fill="#7d8896",
-                                      font=(self.fonts["mono"][0], max(7, font_px - 2)))
+                                      font=(self.fonts["mono"][0], -max(7, font_px - 2)))
             if unpl:
                 ux = min(p[0] for p in unpl.values())
                 uy = max(p[1] + p[3] for p in unpl.values())
@@ -1206,13 +1205,15 @@ class InnovusGUI:
             M = self.lib.macros.get(comp.master)
             k = cell_kind(comp.master, M.cls if M else "", comp.name)
             present[k] = present.get(k, 0) + 1
-        x, y = self.W() - 190, 14
-        self.cv.create_rectangle(x - 10, y - 8, self.W() - 10, y + 20 * len(present) + 4, fill="#0d0f12", outline=T.LINE)
+        P = T.px
+        rh = T.LINE_PX + P(4)
+        x, y = self.W() - P(190), P(14)
+        self.cv.create_rectangle(x - P(10), y - P(8), self.W() - P(10), y + rh * len(present) + P(4), fill="#0d0f12", outline=T.LINE)
         for k, n in sorted(present.items(), key=lambda kv: -kv[1]):
             o, _, label = KIND[k]
-            self.cv.create_rectangle(x, y, x + 12, y + 12, fill=o, outline="")
-            self.cv.create_text(x + 20, y + 6, text=f"{label}  {n}", fill=T.FG, anchor="w", font=self.fonts["small"])
-            y += 20
+            self.cv.create_rectangle(x, y + (rh - P(12)) / 2, x + P(12), y + (rh + P(12)) / 2, fill=o, outline="")
+            self.cv.create_text(x + P(20), y + rh / 2, text=f"{label}  {n}", fill=T.FG, anchor="w", font=self.fonts["small"])
+            y += rh
 
     def _empty_canvas(self) -> None:
         W, H = self.W(), self.H()
@@ -1225,11 +1226,11 @@ class InnovusGUI:
         head = "No design in the database"
         if stage == "loaded":
             head = "Libraries / netlist read - run init_design"
-        c.create_text(W / 2, H / 2 - 24, text=head, fill="#8b929c", font=(self.fonts["ui"][0], 16, "bold"))
+        c.create_text(W / 2, H / 2 - T.LINE_PX * 1.5, text=head, fill="#8b929c", font=(self.fonts["ui"][0], 16, "bold"))
         steps = ["read_libs <liberty>", "read_physical -lef {tech.tlef cells.lef}", "read_netlist <mapped.v>",
                  "set_top <top>", "init_design"]
         for i, s in enumerate(steps):
-            c.create_text(W / 2, H / 2 + 14 + i * 20, text=s, fill="#5c636d", font=self.fonts["mono"])
+            c.create_text(W / 2, H / 2 + T.MLINE_PX + i * (T.MLINE_PX + T.px(3)), text=s, fill="#5c636d", font=self.fonts["mono"])
 
     def _draw_world_view(self) -> None:
         wv = self.wv
@@ -1769,7 +1770,7 @@ class Dialog:
             self.vars[key] = v
             r += 1
         if note:
-            ttk.Label(f, text=note, style="Dim.TLabel", wraplength=380, justify="left").grid(
+            ttk.Label(f, text=note, style="Dim.TLabel", wraplength=T.px(380), justify="left").grid(
                 row=r, column=0, columnspan=2, sticky="w", pady=(10, 0))
             r += 1
         bb = ttk.Frame(f, style="Panel.TFrame")

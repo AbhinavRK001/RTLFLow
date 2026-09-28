@@ -44,8 +44,7 @@ class ToolGUI:
         self.hist: list[str] = []
         self.hist_i = 0
         root.title(f"{self.title} {VERSION} — {project.replace(os.path.expanduser('~'), '~')}")
-        root.geometry("1400x880")
-        root.minsize(900, 600)
+        T.fit_geometry(root, 1400, 880, 900, 600)
         self.menubar = tk.Menu(root, bg=T.BG2, fg=T.FG, activebackground=T.ACCENT, relief="flat")
         root.configure(menu=self.menubar)
         self.toolbar = ttk.Frame(root, padding=(6, 4))
@@ -275,26 +274,28 @@ class Chart:
     def frame(cv: tk.Canvas, pad=(56, 18, 16, 34)):
         cv.delete("all")
         W, H = max(cv.winfo_width(), 50), max(cv.winfo_height(), 50)
-        l, t, r, b = pad
+        l, t, r, b = (T.px(v) for v in pad)
         return l, t, W - r, H - b
 
     @staticmethod
     def axes(cv, x0, y0, x1, y1, ymin, ymax, yfmt="{:g}", nt=4, font=None):
         if yfmt == "{:.0f}" and ymax - ymin < nt:
             nt = max(1, int(ymax - ymin))
+        # never let tick labels overlap: at least ~1.6 text lines between ticks
+        nt = max(1, min(nt, int((y1 - y0) / (T.LINE_PX * 1.6))))
         cv.create_line(x0, y1, x1, y1, fill="#4a5058")
         cv.create_line(x0, y0, x0, y1, fill="#4a5058")
         for i in range(nt + 1):
             v = ymin + (ymax - ymin) * i / nt
             y = y1 - (y1 - y0) * i / nt
             cv.create_line(x0, y, x1, y, fill="#20252b")
-            cv.create_text(x0 - 6, y, text=yfmt.format(v), anchor="e", fill=T.FG_DIM, font=font)
+            cv.create_text(x0 - T.px(6), y, text=yfmt.format(v), anchor="e", fill=T.FG_DIM, font=font)
 
     @staticmethod
     def empty(cv, text):
         cv.delete("all")
         W, H = max(cv.winfo_width(), 50), max(cv.winfo_height(), 50)
-        cv.create_text(W / 2, H / 2, text=text, fill=T.FG_DIM)
+        cv.create_text(W / 2, H / 2, text=text, fill=T.FG_DIM, font=T.UI_FONT)
 
 
 def heat(v: float) -> str:

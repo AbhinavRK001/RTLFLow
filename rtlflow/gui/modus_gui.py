@@ -46,7 +46,7 @@ class ModusGUI(ToolGUI):
             v.pack(anchor="w")
             self.chips[k] = v
         ttk.Label(left, text="COVERAGE vs PATTERNS", style="Dim.TLabel").pack(anchor="w")
-        self.cv = tk.Canvas(left, bg="#0d0f12", highlightthickness=0, height=260)
+        self.cv = tk.Canvas(left, bg="#0d0f12", highlightthickness=0, height=T.px(260))
         self.cv.pack(fill="both", expand=True, pady=(4, 0))
         self.cv.bind("<Configure>", lambda e: self.draw_curve())
         self.model_lbl = ttk.Label(left, text="", style="Dim.TLabel", justify="left")
@@ -79,7 +79,13 @@ class ModusGUI(ToolGUI):
         sf = ttk.Frame(right, style="Panel.TFrame")
         right.add(sf, text="Scan chains")
         self.sc = tk.Canvas(sf, bg="#0d0f12", highlightthickness=0)
+        ssb = ttk.Scrollbar(sf, orient="vertical", command=self.sc.yview)
+        self.sc.configure(yscrollcommand=ssb.set)
+        ssb.pack(side="right", fill="y")
         self.sc.pack(fill="both", expand=True)
+        self.sc.bind("<Button-4>", lambda e: self.sc.yview_scroll(-3, "units"))
+        self.sc.bind("<Button-5>", lambda e: self.sc.yview_scroll(3, "units"))
+        self.sc.bind("<MouseWheel>", lambda e: self.sc.yview_scroll(-1 if e.delta > 0 else 1, "units"))
         self.sc.bind("<Configure>", lambda e: self.draw_chains())
 
     def build_menus(self):
@@ -157,38 +163,52 @@ class ModusGUI(ToolGUI):
         cv.create_line(*[v for p in pts for v in p], fill="#4c9dff", width=2)
         for (x, y) in pts[1:]:
             cv.create_oval(x - 2, y - 2, x + 2, y + 2, fill="#4c9dff", outline="")
-        cv.create_text(x1, y1 + 14, text=f"{nmax} patterns", anchor="e", fill=T.FG_DIM, font=self.fonts["small"])
-        cv.create_text(x0, y1 + 14, text="0", anchor="w", fill=T.FG_DIM, font=self.fonts["small"])
+        P = T.px
+        cv.create_text(x1, y1 + P(14), text=f"{nmax} patterns", anchor="e", fill=T.FG_DIM, font=self.fonts["small"])
+        cv.create_text(x0, y1 + P(14), text="0", anchor="w", fill=T.FG_DIM, font=self.fonts["small"])
 
     def draw_chains(self):
         cv = self.sc
         cv.delete("all")
+        P = T.px
         W = max(cv.winfo_width(), 200)
         if not self.chains:
             txt = "No scan chains yet — DFT → Connect scan chains"
             if self.flops:
                 txt += f"\n({len(self.flops)} flip-flops in the model)"
-            cv.create_text(W / 2, 60, text=txt, fill=T.FG_DIM, justify="center")
+            cv.create_text(W / 2, P(60), text=txt, fill=T.FG_DIM, justify="center", font=self.fonts["ui"])
             return
-        y = 30
+        import tkinter.font as tkfont
+        sm = tkfont.Font(font=self.fonts["small"])
+        mono = tkfont.Font(font=self.fonts["mono"])
+        cells = [c for ch in self.chains for c in ch["cells"]]
+        # box size from the real text size, so nothing is clipped at any DPI
+        bw = max([P(106)] + [sm.measure(c["inst"]) + P(12) for c in cells] +
+                 [sm.measure(c["type"].split("__")[-1]) + P(12) for c in cells])
+        lh = sm.metrics("linespace")
+        bh = 2 * lh + P(8)
+        gap = P(24)
+        y = P(30)
         for ch in self.chains:
-            cv.create_text(16, y, text=ch["name"], anchor="w", fill=T.FG, font=self.fonts["bold"])
-            y += 26
-            x = 16
-            cv.create_text(x, y + 14, text=ch["scan_in"], anchor="w", fill="#ffcc00", font=self.fonts["mono"])
-            x += 90
+            cv.create_text(P(16), y, text=ch["name"], anchor="w", fill=T.FG, font=self.fonts["bold"])
+            y += T.LINE_PX + P(10)
+            x = P(16)
+            cv.create_text(x, y + bh / 2, text=ch["scan_in"], anchor="w", fill="#ffcc00", font=self.fonts["mono"])
+            x0 = x + mono.measure(ch["scan_in"]) + gap + P(8)
+            x = x0
             for c in ch["cells"]:
-                if x + 130 > W:
-                    x = 106
-                    y += 56
-                cv.create_line(x - 24, y + 14, x, y + 14, fill="#6fa8ff", arrow="last")
-                cv.create_rectangle(x, y, x + 106, y + 30, outline="#d38cff", fill="#26123a")
-                cv.create_text(x + 53, y + 9, text=c["inst"], fill=T.FG, font=self.fonts["small"])
-                cv.create_text(x + 53, y + 22, text=c["type"].split("__")[-1], fill=T.FG_DIM, font=self.fonts["small"])
-                x += 130
-            cv.create_line(x - 24, y + 14, x, y + 14, fill="#6fa8ff", arrow="last")
-            cv.create_text(x + 4, y + 14, text=ch["scan_out"], anchor="w", fill="#ffcc00", font=self.fonts["mono"])
-            y += 70
+                if x + bw + gap > W:
+                    x = x0
+                    y += bh + P(26)
+                cv.create_line(x - gap, y + bh / 2, x, y + bh / 2, fill="#6fa8ff", arrow="last")
+                cv.create_rectangle(x, y, x + bw, y + bh, outline="#d38cff", fill="#26123a")
+                cv.create_text(x + bw / 2, y + P(4) + lh / 2, text=c["inst"], fill=T.FG, font=self.fonts["small"])
+                cv.create_text(x + bw / 2, y + P(4) + lh * 1.5, text=c["type"].split("__")[-1], fill=T.FG_DIM, font=self.fonts["small"])
+                x += bw + gap
+            cv.create_line(x - gap, y + bh / 2, x, y + bh / 2, fill="#6fa8ff", arrow="last")
+            cv.create_text(x + P(4), y + bh / 2, text=ch["scan_out"], anchor="w", fill="#ffcc00", font=self.fonts["mono"])
+            y += bh + P(40)
+        cv.configure(scrollregion=(0, 0, W, y))
 
 
 def main(argv=None):

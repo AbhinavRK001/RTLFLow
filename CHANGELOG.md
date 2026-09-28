@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.7.2 — 2026-09-28 (HiDPI: no more half-cut text)
+- **Text clipped in every GUI on scaled / HiDPI displays**: Tk scales fonts with the display DPI but
+  row heights, paddings and canvas geometry were fixed pixel values. `gui/theme.py` now measures the
+  real font (`linespace`) and derives a scale factor used everywhere:
+  - Treeview row height = font height + padding (fault browser, path/instance lists, design browser…)
+  - Treeview column widths, button/tab/heading paddings, window size (clamped to the screen)
+  - canvas drawings: chart margins and tick density (no overlapping axis labels), Tempus stage view
+    (label column measured from the text), Voltus bars/legend, Modus scan-chain boxes sized to the
+    cell names, waveform rows/name column, Innovus legend, Genus schematic text sized with the zoom
+  - side panels (Pegasus, NCLaunch) keep their width; Innovus command line can no longer be pushed off-screen
+  - override with `export RTLFLOW_GUI_SCALE=1.5` (or any factor) if you want bigger/smaller GUIs
+- `simvision` with the NCLaunch GUI open and no GTKWave/Surfer installed loads the VCD into the built-in viewer.
+- `modus connect_scan_chains` on a combinational design (e.g. alu4) prints a clear note instead of
+  an internal error (RFM-INT-999).
+- `innovus -gui` accepted (same as the default GUI mode).
+- `bin/rtlflow` sets `PYTHONSAFEPATH=1` so a stray `rtlflow/` folder in the current directory can't
+  shadow the package (`No module named rtlflow.__main__`).
+
 ## 2.7.1 — 2026-09-28 (fixes from the first real run on exp_2)
 - **genus elaborate failed** with `Can't create file …elab.stat.txt`: Yosys passes (tee, abc, dfflibmap)
   don't strip quotes the way frontends do, so quoted paths broke `tee -o`, `-liberty` and `abc -script`.

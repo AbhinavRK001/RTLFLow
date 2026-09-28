@@ -27,7 +27,8 @@ class PegasusGUI(ToolGUI):
         self.tool_button("Fit", lambda: self.lay.fit())
         pw = ttk.PanedWindow(self.center, orient="horizontal")
         pw.pack(fill="both", expand=True)
-        left = ttk.Frame(pw, style="Panel.TFrame", padding=8, width=330)
+        left = ttk.Frame(pw, style="Panel.TFrame", padding=8, width=T.px(330))
+        left.pack_propagate(False)       # keep the requested (DPI-scaled) width
         pw.add(left, weight=0)
         self.badges = {}
         for key, lab in (("drc", "DRC"), ("lvs", "LVS")):

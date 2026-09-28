@@ -32,11 +32,12 @@ class NCLaunchGUI(ToolGUI):
         self.tool_button("SimVision (GTKWave)", lambda: self.send_cmd("simvision"))
         pw = ttk.PanedWindow(self.center, orient="horizontal")
         pw.pack(fill="both", expand=True)
-        left = ttk.Frame(pw, style="Panel.TFrame", padding=8, width=380)
+        left = ttk.Frame(pw, style="Panel.TFrame", padding=8, width=T.px(380))
+        left.pack_propagate(False)       # keep the requested (DPI-scaled) width
         pw.add(left, weight=0)
         ttk.Label(left, text="SOURCES  (right-click to set role)", style="Dim.TLabel").pack(anchor="w")
         cols = ("role", "module")
-        self.tree = ttk.Treeview(left, columns=cols, show="tree headings", height=14)
+        self.tree = ttk.Treeview(left, columns=cols, show="tree headings", height=5)
         self.tree.heading("#0", text="File")
         self.tree.heading("role", text="Role")
         self.tree.heading("module", text="Module")
@@ -62,7 +63,7 @@ class NCLaunchGUI(ToolGUI):
         eb = ttk.Frame(f2, style="Panel.TFrame")
         eb.grid(row=1, column=1, sticky="w", padx=6)
         for e in ("verilator", "icarus"):
-            ttk.Radiobutton(eb, text=e, value=e, variable=self.engine).pack(side="left")
+            ttk.Radiobutton(eb, text=e, value=e, variable=self.engine).pack(side="left", padx=(0, T.px(10)))
         self.result = tk.Label(left, text="no run yet", bg=T.BG3, fg=T.FG, font=(self.fonts["ui"][0], 13, "bold"), pady=6)
         self.result.pack(fill="x", pady=(12, 0))
         self.wave = WaveView(pw, self.fonts)

@@ -195,7 +195,7 @@ class GenusGUI:
         self.cmd_id = 0
         self._drag = None
         root.title(f"RTLFlow Genus Synthesis Solution {VERSION} — {project}")
-        root.geometry("1440x900")
+        T.fit_geometry(root, 1440, 900)
         self._menu()
         self._toolbar()
         self._body()
@@ -270,7 +270,7 @@ class GenusGUI:
     def _body(self):
         pw = ttk.PanedWindow(self.root, orient="horizontal")
         pw.pack(fill="both", expand=True)
-        left = ttk.Frame(pw, style="Panel.TFrame", width=270)
+        left = ttk.Frame(pw, style="Panel.TFrame", width=T.px(270))
         pw.add(left, weight=0)
         ttk.Label(left, text="DESIGN BROWSER", style="Dim.TLabel").pack(anchor="w", padx=10, pady=(8, 2))
         self.tree = ttk.Treeview(left, show="tree")
@@ -534,7 +534,9 @@ class GenusGUI:
         sch = self.sch
         s = self.s
         hi = set(self.hi)
-        fs = max(6, min(12, int(9 * s)))
+        # schematic text is sized in *pixels* proportional to the zoom, so it always fits the
+        # cell boxes (point sizes grow with display DPI while the geometry does not -> clipping)
+        fs = -max(7, min(int(16 * T.SCALE), round(12 * s)))
         # wires
         for b, (dn, dp) in sch.drv.items():
             sinks = sch.sinks.get(b, [])
@@ -583,14 +585,14 @@ class GenusGUI:
                 c.create_text((X1 + X2) / 2, Y1 + 8 * s, text=nd["type"].split("__")[-1], fill="#e6edf3",
                               font=(self.fonts["mono"][0], fs, "bold"))
                 c.create_text((X1 + X2) / 2, Y2 - 7 * s, text=nd["name"], fill="#8b949e",
-                              font=(self.fonts["mono"][0], max(6, fs - 1)))
+                              font=(self.fonts["mono"][0], min(-6, fs + 1)))
             if s > 0.8:
                 for pin in nd["ins"]:
                     px, py = self.P(*sch.pin_xy(n, pin))
-                    c.create_text(px + 3, py, text=pin, anchor="w", fill="#6e7681", font=(self.fonts["mono"][0], max(6, fs - 2)))
+                    c.create_text(px + 3, py, text=pin, anchor="w", fill="#6e7681", font=(self.fonts["mono"][0], min(-6, fs + 2)))
                 for pin in nd["outs"]:
                     px, py = self.P(*sch.pin_xy(n, pin))
-                    c.create_text(px - 3, py, text=pin, anchor="e", fill="#6e7681", font=(self.fonts["mono"][0], max(6, fs - 2)))
+                    c.create_text(px - 3, py, text=pin, anchor="e", fill="#6e7681", font=(self.fonts["mono"][0], min(-6, fs + 2)))
         if self.hi_label:
             c.create_text(12, 12, anchor="nw", text=self.hi_label, fill=HILITE, font=self.fonts["bold"])
 

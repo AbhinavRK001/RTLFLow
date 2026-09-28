@@ -97,12 +97,17 @@ def fmt_bus(v: str, width: int, radix: str = "hex") -> str:
 
 
 class WaveView(ttk.Frame):
-    ROW = 26
-    NAME_W = 190
 
     def __init__(self, parent, fonts):
         super().__init__(parent, style="Panel.TFrame")
         self.fonts = fonts
+        import tkinter.font as tkfont
+        self.f9 = tkfont.Font(font=(fonts["mono"][0], 9))
+        self.f8 = tkfont.Font(font=(fonts["mono"][0], 8))
+        lh = self.f9.metrics("linespace")
+        self.ROW = max(26, lh + T.px(12))          # row height follows the real font height
+        self.HEAD = lh + T.px(8)                   # time-axis band
+        self.NAME_W = T.px(190)
         self.vcd: VCD | None = None
         self.shown: list[str] = []
         self.t0, self.t1 = 0, 100
@@ -110,7 +115,7 @@ class WaveView(ttk.Frame):
         self.radix = tk.StringVar(value="hex")
         pw = ttk.PanedWindow(self, orient="horizontal")
         pw.pack(fill="both", expand=True)
-        left = ttk.Frame(pw, style="Panel.TFrame", width=230)
+        left = ttk.Frame(pw, style="Panel.TFrame", width=T.px(230))
         pw.add(left, weight=0)
         ttk.Label(left, text="SIGNALS  (double-click to add)", style="Dim.TLabel").pack(anchor="w", padx=6, pady=(6, 2))
         self.tree = ttk.Treeview(left, show="tree")
@@ -223,9 +228,12 @@ class WaveView(ttk.Frame):
         cv.delete("all")
         W, H = cv.winfo_width(), cv.winfo_height()
         if not self.vcd:
-            cv.create_text(W / 2, H / 2, text="Run a simulation — the waveform appears here", fill=T.FG_DIM)
+            cv.create_text(W / 2, H / 2, text="Run a simulation — the waveform appears here", fill=T.FG_DIM, font=self.fonts["ui"])
             return
-        mono = (self.fonts["mono"][0], 9)
+        mono = self.f9
+        longest = max([self.f9.measure(f.split(".")[-1] + "[31:0]  FFFFFFFF") for f in self.shown] + [T.px(190)])
+        self.NAME_W = min(longest + T.px(14), max(W // 3, T.px(190)))
+        hd = self.HEAD
         cv.create_rectangle(0, 0, self.NAME_W, H, fill="#0d1014", outline="")
         # time axis
         span = self.t1 - self.t0
@@ -236,11 +244,11 @@ class WaveView(ttk.Frame):
         while t <= self.t1:
             x = self.X(t)
             if x >= self.NAME_W:
-                cv.create_line(x, 18, x, H, fill="#141a22")
-                cv.create_text(x + 2, 9, text=f"{t}", anchor="w", fill=T.FG_DIM, font=mono)
+                cv.create_line(x, hd - 4, x, H, fill="#141a22")
+                cv.create_text(x + 2, hd / 2, text=f"{t}", anchor="w", fill=T.FG_DIM, font=mono)
             t += step
-        cv.create_text(6, 9, text=f"time ({self.vcd.timescale})", anchor="w", fill=T.FG_DIM, font=mono)
-        y = 24
+        cv.create_text(6, hd / 2, text=f"time ({self.vcd.timescale})", anchor="w", fill=T.FG_DIM, font=mono)
+        y = hd + 2
         for full in self.shown:
             ident = self.vcd.byname.get(full)
             if not ident:
@@ -253,14 +261,14 @@ class WaveView(ttk.Frame):
             if self.cursor is not None:
                 cv.create_text(self.NAME_W - 6, y + self.ROW / 2, text=fmt_bus(val_c, s["width"], self.radix.get()) if s["width"] > 1 else val_c,
                                anchor="e", fill="#ffcc00", font=mono)
-            self._draw_sig(s, y + 4, y + self.ROW - 4)
+            self._draw_sig(s, y + T.px(5), y + self.ROW - T.px(5))
             y += self.ROW
             if y > H:
                 break
         if self.cursor is not None:
             x = self.X(self.cursor)
-            cv.create_line(x, 18, x, H, fill="#ffcc00")
-            cv.create_text(x + 3, 20, text=str(self.cursor), anchor="nw", fill="#ffcc00", font=mono)
+            cv.create_line(x, hd - 4, x, H, fill="#ffcc00")
+            cv.create_text(x + 3, hd, text=str(self.cursor), anchor="nw", fill="#ffcc00", font=mono)
         self.info.configure(text=f"{len(self.vcd.order)} signals · end time {self.vcd.tmax} · view {int(self.t0)}–{int(self.t1)}"
                                  "   (wheel = zoom, middle-drag = pan, click = cursor)")
 
@@ -295,5 +303,5 @@ class WaveView(ttk.Frame):
                 cv.create_polygon(x1, ym, x1 + d, ytop, x2 - d, ytop, x2, ym, x2 - d, ybot, x1 + d, ybot,
                                   outline=col, fill="#0e1f33" if not bad else "#3a0d0d")
                 txt = fmt_bus(v, s["width"], self.radix.get())
-                if x2 - x1 > len(txt) * 7 + 6:
-                    cv.create_text((x1 + x2) / 2, ym, text=txt, fill="#dbe7f5", font=(self.fonts["mono"][0], 8))
+                if x2 - x1 > self.f8.measure(txt) + 6:
+                    cv.create_text((x1 + x2) / 2, ym, text=txt, fill="#dbe7f5", font=self.f8)

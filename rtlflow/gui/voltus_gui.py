@@ -48,10 +48,10 @@ class VoltusGUI(ToolGUI):
         self.imap.show_routes = False
         self.imap.on_hover = lambda x, y: self._hover(self.imap, x, y, "ir")
         self.nb.add(self.imap, text="IR drop map")
-        side = ttk.Frame(pw, style="Panel.TFrame", padding=10, width=300)
+        side = ttk.Frame(pw, style="Panel.TFrame", padding=10, width=T.px(300))
         pw.add(side, weight=0)
         ttk.Label(side, text="LEGEND", style="Dim.TLabel").pack(anchor="w")
-        self.legend = tk.Canvas(side, height=46, bg=T.BG2, highlightthickness=0)
+        self.legend = tk.Canvas(side, height=T.px(26) + T.LINE_PX + 4, bg=T.BG2, highlightthickness=0)
         self.legend.pack(fill="x", pady=(2, 10))
         ttk.Label(side, text="SUMMARY", style="Dim.TLabel").pack(anchor="w")
         self.summ = ttk.Label(side, text="—", style="Panel.TLabel", justify="left", font=self.fonts["mono"])
@@ -124,13 +124,13 @@ class VoltusGUI(ToolGUI):
         lg.delete("all")
         w = max(lg.winfo_width(), 200)
         for i in range(50):
-            lg.create_rectangle(i * w / 50, 4, (i + 1) * w / 50, 22, fill=heat(i / 49), outline="")
+            lg.create_rectangle(i * w / 50, T.px(4), (i + 1) * w / 50, T.px(22), fill=heat(i / 49), outline="")
         if tab == 2 and self.volt:
             sup = self.ir.get("supply", 1.8)
             drops = {k: abs(sup - v) for k, v in self.volt.items()}
             lo, hi = min(drops.values()), max(drops.values())
-            lg.create_text(2, 36, text=f"{lo * 1000:.2f} mV", anchor="w", fill=T.FG_DIM, font=self.fonts["small"])
-            lg.create_text(w - 2, 36, text=f"{hi * 1000:.2f} mV drop", anchor="e", fill=T.FG_DIM, font=self.fonts["small"])
+            lg.create_text(2, T.px(26) + T.LINE_PX / 2, text=f"{lo * 1000:.2f} mV", anchor="w", fill=T.FG_DIM, font=self.fonts["small"])
+            lg.create_text(w - 2, T.px(26) + T.LINE_PX / 2, text=f"{hi * 1000:.2f} mV drop", anchor="e", fill=T.FG_DIM, font=self.fonts["small"])
             for k, v in sorted(drops.items(), key=lambda kv: -kv[1])[:40]:
                 self.top.insert("", "end", iid=k, text=k, values=(f"{v * 1000:.3f} mV",))
             ir = self.ir
@@ -139,8 +139,8 @@ class VoltusGUI(ToolGUI):
                                      f"average  {ir.get('avg_drop', sum(drops.values()) / len(drops)) * 1000:.3f} mV")
         elif self.inst:
             lo, hi = min(self.inst.values()), max(self.inst.values())
-            lg.create_text(2, 36, text=f"{lo * 1e6:.3f} µW", anchor="w", fill=T.FG_DIM, font=self.fonts["small"])
-            lg.create_text(w - 2, 36, text=f"{hi * 1e6:.3f} µW", anchor="e", fill=T.FG_DIM, font=self.fonts["small"])
+            lg.create_text(2, T.px(26) + T.LINE_PX / 2, text=f"{lo * 1e6:.3f} µW", anchor="w", fill=T.FG_DIM, font=self.fonts["small"])
+            lg.create_text(w - 2, T.px(26) + T.LINE_PX / 2, text=f"{hi * 1e6:.3f} µW", anchor="e", fill=T.FG_DIM, font=self.fonts["small"])
             for k, v in sorted(self.inst.items(), key=lambda kv: -kv[1])[:40]:
                 self.top.insert("", "end", iid=k, text=k, values=(f"{v * 1e6:.3f} µW",))
         if tab != 2 and self.power.get("total"):
@@ -173,7 +173,9 @@ class VoltusGUI(ToolGUI):
         g = self.power.get("groups", {})
         if not g:
             return Chart.empty(cv, "No power data — Report Power")
-        x0, y0, x1, y1 = Chart.frame(cv, pad=(70, 40, 30, 40))
+        x0, y0, x1, y1 = Chart.frame(cv, pad=(70, 16, 30, 16))
+        y0 += T.LINE_PX * 2 + T.px(6)
+        y1 -= T.LINE_PX
         mx = max(v["total"] for v in g.values()) or 1
         Chart.axes(cv, x0, y0, x1, y1, 0, mx * 1e6, "{:.2f}", font=self.fonts["small"])
         n = len(g)
@@ -184,14 +186,18 @@ class VoltusGUI(ToolGUI):
                 h = (y1 - y0) * v[comp] / mx
                 cv.create_rectangle(x0 + i * bw + bw * 0.2, base - h, x0 + (i + 1) * bw - bw * 0.2, base, fill=col, outline="")
                 base -= h
-            cv.create_text(x0 + (i + 0.5) * bw, y1 + 14, text=name, fill=T.FG, font=self.fonts["small"])
-            cv.create_text(x0 + (i + 0.5) * bw, base - 10, text=f"{v['total'] * 1e6:.2f}", fill=T.FG_DIM, font=self.fonts["small"])
-        cv.create_text(x0, y0 - 24, text="Power by group (µW)", anchor="w", fill=T.FG, font=self.fonts["bold"])
+            cv.create_text(x0 + (i + 0.5) * bw, y1 + T.px(4) + T.LINE_PX / 2, text=name, fill=T.FG, font=self.fonts["small"])
+            cv.create_text(x0 + (i + 0.5) * bw, base - T.LINE_PX / 2 - 2, text=f"{v['total'] * 1e6:.2f}", fill=T.FG_DIM, font=self.fonts["small"])
+        import tkinter.font as tkfont
+        sm = tkfont.Font(font=self.fonts["small"])
+        ty = y0 - T.LINE_PX * 1.5 - T.px(6)
+        cv.create_text(x0, ty, text="Power by group (µW)", anchor="w", fill=T.FG, font=self.fonts["bold"])
         lx = x1
+        sq = T.px(12)
         for comp, col in reversed(COMP):
-            lx -= 90
-            cv.create_rectangle(lx, y0 - 30, lx + 12, y0 - 18, fill=col, outline="")
-            cv.create_text(lx + 16, y0 - 24, text=comp, anchor="w", fill=T.FG_DIM, font=self.fonts["small"])
+            lx -= sm.measure(comp) + sq + T.px(20)
+            cv.create_rectangle(lx, ty - sq / 2, lx + sq, ty + sq / 2, fill=col, outline="")
+            cv.create_text(lx + sq + T.px(4), ty, text=comp, anchor="w", fill=T.FG_DIM, font=self.fonts["small"])
 
 
 def main(argv=None):

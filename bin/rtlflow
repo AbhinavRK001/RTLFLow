@@ -19,6 +19,8 @@ if [ -z "$PY" ]; then
     if command -v "$c" >/dev/null 2>&1; then PY="$(command -v "$c")"; break; fi
   done
 fi
+# don't let a stray ./rtlflow folder in the current directory shadow the real package
+export PYTHONSAFEPATH=1
 TOOL="$(basename "$0")"
 if [ "$TOOL" = "rtlflow" ]; then
   exec "$PY" -m rtlflow "$@"

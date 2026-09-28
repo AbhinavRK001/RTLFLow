@@ -68,8 +68,7 @@ class Launcher:
         self.project = Path(project).resolve()
         self.fonts = T.apply(root)
         root.title(f"RTLFlow EDA Suite {VERSION}")
-        root.geometry("1180x760")
-        root.minsize(900, 600)
+        T.fit_geometry(root, 1180, 760, 900, 600)
         tools_found = {}
         if env:
             try:
@@ -125,7 +124,7 @@ class Launcher:
         tk.Frame(f, bg=acc, height=3).pack(fill="x", pady=(0, 10))
         tk.Label(f, text=stage.upper(), bg=T.BG2, fg=acc, font=self.fonts["small"]).pack(anchor="w")
         tk.Label(f, text=title, bg=T.BG2, fg="#ffffff", font=(self.fonts["ui"][0], 18, "bold")).pack(anchor="w")
-        tk.Label(f, text=what, bg=T.BG2, fg=T.FG_DIM, font=self.fonts["ui"], wraplength=220, justify="left").pack(anchor="w", pady=(2, 8))
+        tk.Label(f, text=what, bg=T.BG2, fg=T.FG_DIM, font=self.fonts["ui"], wraplength=T.px(220), justify="left").pack(anchor="w", pady=(2, 8))
         have = [e for e in engines if self.found.get(e) and self.found[e].ok]
         miss = [e for e in engines if e not in have]
         if key == "modus":
@@ -137,7 +136,7 @@ class Launcher:
         if miss:
             tk.Label(erow, text=("  missing: " if have else "missing: ") + ", ".join(miss), bg=T.BG2, fg=T.ERR,
                      font=self.fonts["small"]).pack(side="left")
-        st = tk.Label(f, text="", bg=T.BG2, fg="#9ecbff", font=self.fonts["small"], wraplength=230, justify="left")
+        st = tk.Label(f, text="", bg=T.BG2, fg="#9ecbff", font=self.fonts["small"], wraplength=T.px(230), justify="left")
         st.pack(anchor="w", pady=(4, 10))
         row = tk.Frame(f, bg=T.BG2)
         row.pack(fill="x", side="bottom")

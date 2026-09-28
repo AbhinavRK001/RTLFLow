@@ -6,6 +6,7 @@ from __future__ import annotations
 import math
 import tkinter as tk
 
+from . import theme as T
 from .lefdef import DefDesign, LefLib, placed_size, read_def, read_lefs
 from .innovus_gui import KIND, METAL, LI_COLOR, cell_kind
 
@@ -169,8 +170,8 @@ class LayoutCanvas(tk.Canvas):
         val = next(m * mag for m in (1, 2, 5, 10) if m * mag >= target * 0.6)
         px = val * self.s
         H = self.winfo_height()
-        self.create_line(16, H - 18, 16 + px, H - 18, fill="#d0d0d0", width=2)
-        self.create_text(16 + px / 2, H - 26, text=f"{val:g} µm", fill="#d0d0d0", font=self.fonts["small"], anchor="s")
+        self.create_line(16, H - T.px(18), 16 + px, H - T.px(18), fill="#d0d0d0", width=2)
+        self.create_text(16 + px / 2, H - T.px(26), text=f"{val:g} µm", fill="#d0d0d0", font=self.fonts["small"], anchor="s")
 
     # interaction
     def _down(self, e):

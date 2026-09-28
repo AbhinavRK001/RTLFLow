@@ -51,7 +51,7 @@ class TempusGUI(ToolGUI):
             v.pack(anchor="w")
             self.chips[k] = v
         ttk.Label(left, text="ENDPOINT SLACK HISTOGRAM", style="Dim.TLabel").pack(anchor="w")
-        self.hist = tk.Canvas(left, bg="#0d0f12", highlightthickness=0, height=260)
+        self.hist = tk.Canvas(left, bg="#0d0f12", highlightthickness=0, height=T.px(260))
         self.hist.pack(fill="both", expand=True, pady=(4, 0))
         self.hist.bind("<Configure>", lambda e: self.draw_hist())
         right = ttk.PanedWindow(pw, orient="vertical")
@@ -73,7 +73,7 @@ class TempusGUI(ToolGUI):
         df = ttk.Frame(right, style="Panel.TFrame")
         right.add(df, weight=2)
         ttk.Label(df, text="  PATH STAGE DELAYS  (arrival time, per-stage increment)", style="Dim.TLabel").pack(anchor="w", pady=(4, 0))
-        self.wf = tk.Canvas(df, bg="#0d0f12", highlightthickness=0, height=220)
+        self.wf = tk.Canvas(df, bg="#0d0f12", highlightthickness=0, height=T.px(220))
         self.wf.pack(fill="both", expand=True)
         self.wf.bind("<Configure>", lambda e: self.draw_path())
         self.rep = self.text_tab("Path report")
@@ -184,11 +184,11 @@ class TempusGUI(ToolGUI):
             cv.create_rectangle(x0 + i * bw + 1, y1 - h, x0 + (i + 1) * bw - 1, y1, fill=col, outline="")
         for frac in (0, 0.5, 1):
             v = lo + (hi - lo) * frac
-            cv.create_text(x0 + (x1 - x0) * frac, y1 + 12, text=f"{v:.2f}", fill=T.FG_DIM, font=self.fonts["small"])
+            cv.create_text(x0 + (x1 - x0) * frac, y1 + T.px(12), text=f"{v:.2f}", fill=T.FG_DIM, font=self.fonts["small"])
         if lo < 0 < hi:
             zx = x0 + (x1 - x0) * (0 - lo) / (hi - lo)
             cv.create_line(zx, y0, zx, y1, fill="#ffffff", dash=(3, 3))
-        cv.create_text(x1, y0 - 6, text=f"{len(sl)} endpoints · slack (ns)", anchor="e", fill=T.FG_DIM, font=self.fonts["small"])
+        cv.create_text(x1, y0 - T.px(6), text=f"{len(sl)} endpoints · slack (ns)", anchor="e", fill=T.FG_DIM, font=self.fonts["small"])
 
     def on_path(self, e=None):
         s = self.tree.selection()
@@ -204,10 +204,16 @@ class TempusGUI(ToolGUI):
         if not p or not p.get("points"):
             return Chart.empty(cv, "Select a path")
         pts = [q for q in p["points"]]
-        x0, y0, x1, y1 = Chart.frame(cv, pad=(240, 10, 60, 14))
+        import tkinter.font as tkfont
+        lf = tkfont.Font(font=(self.fonts["mono"][0], 9))
+        labels = [f"{q['pin']} ({q['cell'].split('__')[-1]})" for q in pts]
+        lw = max(lf.measure(t) for t in labels) + T.px(16)
+        x0, y0, x1, y1 = Chart.frame(cv, pad=(10, 10, 60, 14))
+        x0 = min(max(x0, lw), (x1 - x0) * 0.6)
         tmax = max(q["time"] for q in pts) or 1.0
         n = len(pts)
-        rh = max(10, min(22, (y1 - y0) / max(n, 1)))
+        lh = lf.metrics("linespace") + T.px(4)
+        rh = max(lh, min(T.px(22), (y1 - y0) / max(n, 1)))
         for i, q in enumerate(pts):
             y = y0 + i * rh
             start = q["time"] - q["incr"]
@@ -215,13 +221,14 @@ class TempusGUI(ToolGUI):
             X2 = x0 + (x1 - x0) * q["time"] / tmax
             is_net = abs(q["incr"]) < 1e-9
             col = "#d38cff" if "df" in q["cell"].lower() else ("#ffd23f" if "clk" in q["cell"].lower() else T.ACCENT)
-            cv.create_text(x0 - 8, y + rh / 2, text=f"{q['pin']} ({q['cell'].split('__')[-1]})", anchor="e",
-                           fill=T.FG, font=(self.fonts["mono"][0], 9))
+            cv.create_text(x0 - T.px(8), y + rh / 2, text=labels[i], anchor="e",
+                           fill=T.FG, font=lf)
             cv.create_rectangle(X1, y + 2, max(X2, X1 + 2), y + rh - 2, fill=col if not is_net else "#3a3f46", outline="")
-            cv.create_text(max(X2, X1 + 2) + 4, y + rh / 2, text=f"+{q['incr']:.3f}", anchor="w", fill=T.FG_DIM,
+            cv.create_text(max(X2, X1 + 2) + T.px(4), y + rh / 2, text=f"+{q['incr']:.3f}", anchor="w", fill=T.FG_DIM,
                            font=self.fonts["small"])
         sl = p.get("slack")
-        cv.create_text(x1 + 50, y0, anchor="ne", text=f"slack {sl:+.3f} ns" if sl is not None else "",
+        cv.configure(scrollregion=(0, 0, cv.winfo_width(), max(cv.winfo_height(), y0 + n * rh + T.px(14))))
+        cv.create_text(x1 + T.px(50), y0, anchor="ne", text=f"slack {sl:+.3f} ns" if sl is not None else "",
                        fill=T.ERR if (sl or 0) < 0 else T.OK, font=self.fonts["bold"])
 
     def on_report(self, m):

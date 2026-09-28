@@ -224,7 +224,15 @@ class ModusShell(GuiMixin, Shell):
         order = None
         if opts.get("-order") == "placement":
             order = self._placement_order()
-        desc, un = A.insert_scan(self.data, self.st.top, self.st.lib, int(opts.get("-chains") or 1), order)
+        try:
+            desc, un = A.insert_scan(self.data, self.st.top, self.st.lib, int(opts.get("-chains") or 1), order)
+        except ValueError as e:
+            if "no flip-flops" in str(e):
+                warn("RFM-DFT-012", f"'{self.st.top}' has no flip-flops — it is purely combinational, so there is nothing to scan")
+                info("  Combinational designs are fully controllable/observable from the pins:")
+                info("  build_faultmodel → create_logic_tests works directly (no scan needed).")
+                return True
+            raise CmdError(f"connect_scan_chains: {e}")
         self.st.scan, self.st.chains = True, desc
         v = self.project.synth / f"{self.st.top}_scan.v"
         v.write_text(A.write_verilog(self.data, self.st.top))

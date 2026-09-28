@@ -10,7 +10,7 @@
     rtlflow -gui → launcher window to pick any of them
 """
 
-VERSION = "2.7.1"
+VERSION = "2.7.2"
 CODENAME = "Signoff"
 BUILD_DATE = "2026-09-28"
 

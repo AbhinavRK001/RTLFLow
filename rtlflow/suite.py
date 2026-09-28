@@ -110,7 +110,7 @@ class SuiteShell(Shell):
              help="Implementation shell + layout GUI on one OpenROAD session")
     def c_innovus(self, args):
         from .tools.innovus import run_innovus
-        opts, pos = parse_opts(args, flags={"-nowin", "-batch", "-win", "-no_gui", "-stylus"}, valued={"-files": "+", "-init": "+"})
+        opts, pos = parse_opts(args, flags={"-nowin", "-batch", "-win", "-gui", "-no_gui", "-stylus"}, valued={"-files": "+", "-init": "+"})
         files = opts.get("-files", []) + opts.get("-init", []) + pos
         console.close_logs()
         try:
